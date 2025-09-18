@@ -30,7 +30,7 @@ export default function Analysis() {
   const fetchAnalysisData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:8000/health/document-analysis')
+      const response = await fetch('data.json')
       if (!response.ok) {
         throw new Error('Failed to fetch analysis data')
       }

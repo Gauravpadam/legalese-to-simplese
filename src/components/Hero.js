@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Hero = () => {
+const Hero = ({ onUploadClick }) => {
   return (
     <section className="hero">
       <div className="container">
@@ -10,7 +10,7 @@ const Hero = () => {
           highlights risks, and guides your decisions with interactive analysis.
         </p>
         <div className="hero-buttons">
-          <a href="#upload" className="btn btn-primary">Upload Your Contract</a>
+          <button onClick={onUploadClick} className="btn btn-primary">Upload Your Contract</button>
           <a href="#demo" className="btn btn-secondary">Watch Demo</a>
         </div>
         

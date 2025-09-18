@@ -1,6 +1,6 @@
-# LegalClear - Legal Contract Analysis Made Simple
+# legalese-to-simplese - Legal Contract Analysis Made Simple
 
-A React-based clone of the LegalClear homepage that transforms complex legal contracts into clear insights using AI-powered analysis.
+A React-based clone of the legalese-to-simplese homepage that transforms complex legal contracts into clear insights using AI-powered analysis.
 
 ## Features
 
@@ -67,4 +67,4 @@ The project uses CSS with:
 
 ## Original Website
 
-This is a clone of the LegalClear homepage: [https://google-hackathon-frontend-three.vercel.app/](https://google-hackathon-frontend-three.vercel.app/)
+This is a clone of the legalese-to-simplese homepage: [https://google-hackathon-frontend-three.vercel.app/](https://google-hackathon-frontend-three.vercel.app/)

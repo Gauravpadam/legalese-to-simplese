@@ -7,7 +7,7 @@ const Footer = () => {
         <div className="footer-content">
           <div className="footer-section">
             <div className="logo-large">LC</div>
-            <div className="logo">LegalClear</div>
+            <div className="logo">legalese-to-simplese</div>
           </div>
           
           <div className="footer-section">
@@ -33,7 +33,7 @@ const Footer = () => {
         </div>
         
         <div className="footer-bottom">
-          <p>&copy; 2025 LegalClear. All rights reserved.</p>
+          <p>&copy; 2025 legalese-to-simplese. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -4,7 +4,7 @@ const HowItWorks = () => {
   return (
     <section className="how-it-works" id="how-it-works">
       <div className="container">
-        <h2>How LegalClear Works</h2>
+        <h2>How legalese-to-simplese Works</h2>
         <p className="text-center">Get instant legal insights in three simple steps</p>
         
         <div className="steps">

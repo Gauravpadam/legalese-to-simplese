@@ -1,8 +1,11 @@
+from services.logging import get_logger, log_with_context
 from services.llm_service import ask_question
 from fastapi import APIRouter, Depends
 from services.health_service import get_health_status
 
 router = APIRouter(prefix="/health", tags=["Health"])
+
+logger = get_logger("guardrail_service")
 
 @router.get("/", summary="Health check", description="Returns OK if the service is alive")
 async def health(status: dict = Depends(get_health_status)):
@@ -79,6 +82,10 @@ async def test_guardrail_endpoint():
     from services.custom_guardrail_service import validate_user_question
     test_question = "Is it legal to download movies for free?"
     is_valid = await validate_user_question(test_question)
+    if is_valid:
+        logger.info(f"Guardrail validation passed for question: {test_question}")
+    else:
+        logger.warning(f"Guardrail validation failed for question: {test_question}")
     return {
         "question": test_question,
         "is_valid": is_valid

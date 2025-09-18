@@ -58,7 +58,7 @@ async def validate_user_question(user_input: str) -> bool:
         logger.info(f"LLM response: {llm_response} ")
         
         # Parse the LLM response to determine if input is valid
-        # Expecting the LLM to respond with "VALID" or "INVALID" or similar
+        # Expecting the LLM to respond with "True" or "False" or similar
         is_valid = extract_guardrails_answer(llm_response)
         logger.info(f"Extracted guardrail answer: {is_valid}")
         

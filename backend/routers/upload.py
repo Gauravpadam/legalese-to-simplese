@@ -7,6 +7,7 @@ import shutil
 from typing import List
 import time
 import uuid
+import json
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_aws import BedrockEmbeddings
 
@@ -114,6 +115,130 @@ def split_text_into_chunks(text: str, chunk_size: int = 1000, chunk_overlap: int
     
     return chunks
 
+async def analyze_document_with_llm(text: str) -> dict:
+    """
+    Analyze the entire document text using LLM to generate structured analysis.
+    
+    Args:
+        text (str): The full extracted text from the document
+    
+    Returns:
+        dict: Structured document analysis
+    """
+    logger.debug("Analyzing document with LLM for structured output")
+    
+    try:
+        # Import here to avoid circular imports
+        from services.custom_guardrail_service import ask_question
+        
+        system_prompt = """
+You are a legal document analyzer. Analyze the provided document text and return a structured JSON analysis.
+
+Return STRICT JSON with the following structure:
+{
+    "Document_Type": "string - type of document (e.g., 'Rental Agreement', 'Employment Contract', 'Service Agreement')",
+    "Main_Purpose": "string - main purpose of the document in 1-2 sentences",
+    "Key_Highlights": [
+        {"data": "string - important highlight 1"},
+        {"data": "string - important highlight 2"},
+        {"data": "string - important highlight 3"},
+        {"data": "string - important highlight 4"}
+    ],
+    "Risk_Assessment": {
+        "Risk_Score": "integer - overall risk score from 1-10 (10 being highest risk)",
+        "High_Risk": [
+            {"title": "string - risk title", "description": "string - risk description"},
+            {"title": "string - risk title", "description": "string - risk description"}
+        ],
+        "Medium_Risk": [
+            {"title": "string - risk title", "description": "string - risk description"},
+            {"title": "string - risk title", "description": "string - risk description"}
+        ]
+    },
+    "Key_Terms": [
+        {"title": "string - term name", "description": "string - term details"},
+        {"title": "string - term name", "description": "string - term details"},
+        {"title": "string - term name", "description": "string - term details"}
+    ],
+    "Suggested_Questions": [
+        "string - relevant question 1",
+        "string - relevant question 2", 
+        "string - relevant question 3"
+    ]
+}
+
+Rules:
+- Output JSON ONLY (no markdown or extra text)
+- Always include all required fields
+- High_Risk and Medium_Risk can be empty arrays if no significant risks found
+- Risk_Score should reflect overall document risk (terms, penalties, obligations)
+- Key_Highlights should focus on the most important terms and conditions
+- Suggested_Questions should be practical questions a user might ask about the document
+"""
+
+        human_prompt = f"""Document Text:
+-----
+{text[:8000]}...
+-----
+
+Analyze this document and return the structured JSON analysis."""
+
+        # Call the LLM service
+        raw_response = await ask_question(system_prompt, human_prompt)
+        
+        # Parse and validate the response
+        try:
+            analysis = json.loads(raw_response or "{}")
+            
+            # Ensure all required fields exist with defaults
+            required_structure = {
+                "Document_Type": analysis.get("Document_Type", "Unknown Document"),
+                "Main_Purpose": analysis.get("Main_Purpose", "Purpose not determined"),
+                "Key_Highlights": analysis.get("Key_Highlights", [{"data": "No highlights identified"}]),
+                "Risk_Assessment": {
+                    "Risk_Score": analysis.get("Risk_Assessment", {}).get("Risk_Score", 5),
+                    "High_Risk": analysis.get("Risk_Assessment", {}).get("High_Risk", []),
+                    "Medium_Risk": analysis.get("Risk_Assessment", {}).get("Medium_Risk", [])
+                },
+                "Key_Terms": analysis.get("Key_Terms", [{"title": "No terms", "description": "No key terms identified"}]),
+                "Suggested_Questions": analysis.get("Suggested_Questions", ["What are the main obligations?", "What are the risks?", "How can this be terminated?"])
+            }
+            
+            logger.info(f"✅ LLM document analysis completed successfully")
+            return required_structure
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"❌ Failed to parse LLM response as JSON: {e}")
+            return _get_default_analysis()
+            
+    except Exception as e:
+        logger.error(f"❌ Error analyzing document with LLM: {str(e)}")
+        return _get_default_analysis()
+
+def _get_default_analysis() -> dict:
+    """Return default analysis structure when LLM analysis fails."""
+    return {
+        "Document_Type": "Unknown Document",
+        "Main_Purpose": "Unable to determine document purpose due to analysis error",
+        "Key_Highlights": [
+            {"data": "Document analysis failed"},
+            {"data": "Please review document manually"}
+        ],
+        "Risk_Assessment": {
+            "Risk_Score": 5,
+            "High_Risk": [],
+            "Medium_Risk": []
+        },
+        "Key_Terms": [
+            {"title": "Analysis Error", "description": "Unable to extract key terms"}
+        ],
+        "Suggested_Questions": [
+            "What type of document is this?",
+            "What are the main terms?",
+            "What should I be concerned about?"
+        ]
+    }
+
 @router.post("/process-document")
 async def process_document(file: UploadFile = Depends(validate_file)):
     """
@@ -159,6 +284,10 @@ async def process_document(file: UploadFile = Depends(validate_file)):
             # Split the extracted text into chunks
             text_chunks = split_text_into_chunks(extracted_text)
             
+            # Analyze the full document with LLM
+            logger.info("🤖 Analyzing document with LLM for structured output")
+            document_analysis = await analyze_document_with_llm(extracted_text)
+            
             # Generate unique document ID
             doc_id = str(uuid.uuid4())
             
@@ -203,6 +332,7 @@ async def process_document(file: UploadFile = Depends(validate_file)):
                     "document_id": doc_id,
                     "filename": file.filename,
                     "file_type": file_extension,
+                    "document_analysis": document_analysis,
                     "extracted_text": extracted_text,
                     "text_chunks": text_chunks,
                     "elasticsearch": {

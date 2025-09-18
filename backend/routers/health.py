@@ -1,3 +1,4 @@
+from services.llm_service import ask_question
 from fastapi import APIRouter, Depends
 from services.health_service import get_health_status
 
@@ -65,3 +66,11 @@ async def get_document_analysis():
             "Can I terminate the lease early?"
         ]
     }
+
+@router.get("/test")
+async def test_endpoint():
+    return await ask_question(
+        system_message="You are a helpful assistant that provides concise answers based on the user's input.",
+        human_message="What is the capital of France?"
+    )
+    

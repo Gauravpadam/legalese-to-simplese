@@ -6,7 +6,8 @@ FastAPI backend skeleton for the Legalese to Simplese project.
 - FastAPI app with CORS
 - Modular routers (`routers/`)
 - Services layer (`services/`)
-- Utilities (`utils/` with logger)
+- **Comprehensive logging service** with structured logging, colored console output, and file rotation
+- Utilities (`utils/` with backward-compatible logger)
 - Health check endpoint
 - Basic test scaffold with `pytest`
 
@@ -18,11 +19,16 @@ backend/
     health.py
   services/
     health_service.py
+    logging/
+      __init__.py
+      logging_service.py
   utils/
     __init__.py
     logger.py
   tests/
-    test_health.py (created after first test run)
+    test_health.py
+  docs/
+    logging.md
   requirements.txt
 ```
 
@@ -47,7 +53,9 @@ pytest -q
 ```
 
 ## Configuration
-Currently static values are embedded in `services/health_service.py` for simplicity. Introduce a settings module later if dynamic configuration is needed.
+The application uses a comprehensive logging service. See `docs/logging.md` for detailed usage.
+
+Basic logging is configured automatically on startup with colored console output for development.
 
 ## Next Steps (suggested)
 - Add domain-specific routers (e.g. documents, translate)

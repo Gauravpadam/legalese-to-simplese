@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  backend:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    command: sh -c "pip install --no-cache-dir -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  default:
+    name: legalese-network

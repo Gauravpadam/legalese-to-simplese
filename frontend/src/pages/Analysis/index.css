@@ -1,0 +1,967 @@
+
+
+.analysis-section {
+    padding: 8rem 0 4rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+  } 
+  
+   /* .analysis-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="analysis-pattern" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse"><rect x="0" y="0" width="50" height="50" fill="none" stroke="%23667eea" stroke-width="0.5" opacity="0.05"/><circle cx="25" cy="25" r="3" fill="%23667eea" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23analysis-pattern)"/></svg>');
+    opacity: 0.4;
+    z-index: 1;
+  }  */
+  
+   .analysis-container {
+    position: relative;
+    z-index: 2;
+  }
+  
+  .analysis-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  } 
+  
+  /* Analysis Header */
+  .analysis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .header-title-section {
+    position: relative;
+  }
+  
+  .legal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+  
+  .legal-badge i {
+    font-size: 1rem;
+  }
+  
+  .header-left h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+  }
+  
+  .document-info {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .document-info span {
+    background: #f1f3f4;
+    color: #5f6368;
+    padding: 0.25rem 0.75rem;
+    border-radius: 16px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .header-actions .btn-secondary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f8f9fa;
+    color: #5f6368;
+    border: 1px solid #dadce0;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .header-actions .btn-secondary:hover {
+    background: #e8eaed;
+    color: #1a1a1a;
+  }
+  
+  /* Tab Navigation */
+  .tab-navigation {
+    display: flex;
+    background: white;
+    border-radius: 12px;
+    padding: 0.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    overflow-x: auto;
+  }
+  
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #5f6368;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .tab-btn.active {
+    background: #667eea;
+    color: white;
+  }
+  
+  .tab-btn:hover:not(.active) {
+    background: #f1f3f4;
+    color: #1a1a1a;
+  }
+  
+  /* Tab Content */
+  .tab-content {
+    display: block;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+  
+  .tab-panel {
+    padding: 2rem;
+  }
+  
+  .tab-panel.active {
+    display: block;
+  }
+  
+  /* Summary Tab Styles */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+  
+  .document-overview,
+  .overall-assessment {
+    grid-column: span 1;
+  }
+  
+  .key-highlights,
+  .document-stats {
+    grid-column: span 1;
+  }
+  
+  /* Contract Flow Section within Summary */
+  .contract-flow-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .contract-flow-section h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 2rem;
+  }
+  
+  .document-overview h3,
+  .overall-assessment h3,
+  .key-highlights h3,
+  .document-stats h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+  }
+  
+  .overview-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+  }
+  
+  .overview-item {
+    margin-bottom: 1rem;
+  }
+  
+  .overview-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .overview-item label {
+    display: block;
+    font-weight: 500;
+    color: #5f6368;
+    margin-bottom: 0.5rem;
+  }
+  
+  .doc-type-badge {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+  }
+  
+  .purpose-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  
+  .purpose-card i {
+    color: #10b981;
+    font-size: 1.25rem;
+    margin-top: 0.125rem;
+  }
+  
+  .purpose-card p {
+    margin: 0;
+    color: #1a1a1a;
+    line-height: 1.5;
+  }
+  
+  /* Risk Score */
+  .assessment-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  
+  .risk-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .circular-progress {
+    position: relative;
+    width: 120px;
+    height: 120px;
+  }
+  
+  .progress-ring {
+    transform: rotate(-90deg);
+  }
+  
+  .progress-ring-circle {
+    transition: stroke-dashoffset 0.5s ease;
+  }
+  
+  .progress-ring-fill {
+    stroke-dasharray: 327;
+    stroke-dashoffset: 98;
+    stroke-linecap: round;
+  }
+  
+  .score-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+  
+  .score-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+  
+  .score-total {
+    font-size: 1.25rem;
+    color: #5f6368;
+  }
+  
+  .score-label {
+    font-size: 0.875rem;
+    color: #5f6368;
+    font-weight: 500;
+  }
+  
+  .risk-level {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  
+  .medium-risk {
+    background: #fef3c7;
+    color: #d97706;
+  }
+  
+  /* Key Highlights */
+  .highlights-list {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+  }
+  
+  .highlight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 6px;
+    border-left: 3px solid #10b981;
+  }
+  
+  .highlight-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .highlight-item i {
+    color: #10b981;
+    font-size: 1.125rem;
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+  }
+  
+  .highlight-item p {
+    margin: 0;
+    color: #1a1a1a;
+    line-height: 1.5;
+  }
+  
+  /* Document Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+  }
+  
+  .stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: white;
+    border-radius: 6px;
+  }
+  
+  .stat-number {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.25rem;
+  }
+  
+  .stat-label {
+    font-size: 0.875rem;
+    color: #5f6368;
+    font-weight: 500;
+  }
+  
+  /* Risk Assessment Tab */
+  .risk-assessment h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 2rem;
+  }
+  
+  .risk-summary {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .risk-overview {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+  
+  .risk-score-large {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .score-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #fef3c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+  
+  .score-circle .score {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #d97706;
+  }
+  
+  .score-circle .total {
+    font-size: 1.5rem;
+    color: #92400e;
+  }
+  
+  .risk-level-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  
+  .risk-level-badge.medium {
+    background: #fef3c7;
+    color: #d97706;
+  }
+  
+  .risk-description p {
+    color: #5f6368;
+    line-height: 1.6;
+    margin: 0;
+  }
+  
+  .risk-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .risk-category {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .risk-category.high {
+    border: 1px solid #fecaca;
+  }
+  
+  .risk-category.medium {
+    border: 1px solid #fed7aa;
+  }
+  
+  .risk-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+  }
+  
+  .risk-category.high .risk-header {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+  
+  .risk-category.medium .risk-header {
+    background: #fffbeb;
+    color: #d97706;
+  }
+  
+  .risk-count {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+  }
+  
+  .risk-items {
+    background: white;
+  }
+  
+  .risk-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  
+  .risk-item:last-child {
+    border-bottom: none;
+  }
+  
+  .risk-content h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+  }
+  
+  .risk-content p {
+    color: #5f6368;
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+  }
+  
+  .risk-location {
+    font-size: 0.875rem;
+    color: #667eea;
+    font-weight: 500;
+  }
+  
+  .risk-severity {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  
+  .risk-severity.high {
+    background: #fecaca;
+    color: #dc2626;
+  }
+  
+  .risk-severity.medium {
+    background: #fed7aa;
+    color: #d97706;
+  }
+  
+  /* Key Terms Tab */
+  .key-terms h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 2rem;
+  }
+  
+  .terms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+  
+  .term-category h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  
+  .term-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .term-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    border-left: 4px solid #667eea;
+  }
+  
+  .term-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #5f6368;
+    margin-bottom: 0.5rem;
+  }
+  
+  .term-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.25rem;
+  }
+  
+  .term-details {
+    font-size: 0.875rem;
+    color: #5f6368;
+  }
+  
+  /* Q&A Tab */
+  .qa-section h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 2rem;
+  }
+  
+  .qa-container {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 2rem;
+  }
+  
+  .suggested-questions h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+  }
+  
+  .question-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .question-btn {
+    background: #f8f9fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+    color: #1a1a1a;
+  }
+  
+  .question-btn:hover {
+    background: #e5e7eb;
+    border-color: #667eea;
+  }
+  
+  .qa-chat {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    height: 500px;
+  }
+  
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .message {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .message.user {
+    justify-content: flex-end;
+  }
+  
+  .message.user .message-content {
+    background: #667eea;
+    color: white;
+    border-radius: 18px 18px 4px 18px;
+  }
+  
+  .message.assistant .message-content {
+    background: white;
+    color: #1a1a1a;
+    border-radius: 18px 18px 18px 4px;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .message-content {
+    padding: 1rem 1.25rem;
+    max-width: 80%;
+  }
+  
+  .message-content p {
+    margin: 0 0 0.75rem 0;
+    line-height: 1.5;
+  }
+  
+  .message-content p:last-child {
+    margin-bottom: 0;
+  }
+  
+  .message-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  
+  .action-btn {
+    background: #f1f3f4;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .action-btn:hover {
+    background: #e8eaed;
+  }
+  
+  .chat-input {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  
+  .chat-input input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 24px;
+    font-size: 0.875rem;
+    outline: none;
+  }
+  
+  .chat-input input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .send-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .send-btn:hover {
+    background: #5a6fd8;
+  }
+  
+  /* Contract Flow Tab */
+  .contract-flow h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 2rem;
+  }
+  
+  .flow-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+  }
+  
+  .flow-step {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    min-width: 200px;
+    border: 2px solid #e5e7eb;
+  }
+  
+  .step-number {
+    width: 40px;
+    height: 40px;
+    background: #667eea;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin: 0 auto 1rem;
+  }
+  
+  .step-content h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+  }
+  
+  .step-content p {
+    color: #5f6368;
+    margin: 0;
+  }
+  
+  .flow-arrow {
+    font-size: 1.5rem;
+    color: #667eea;
+    font-weight: bold;
+  }
+  
+  .flow-options h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+  }
+  
+  .option-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  .option-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    border-left: 4px solid #10b981;
+  }
+  
+  .option-card.warning {
+    border-left-color: #f59e0b;
+  }
+  
+  .option-card h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+  }
+  
+  .option-card p {
+    color: #5f6368;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+  
+  .option-result {
+    background: white;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1a1a1a;
+  }
+  
+  .option-card.warning .option-result {
+    background: #fef3c7;
+    color: #d97706;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .analysis-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+  
+    .header-actions {
+        justify-content: stretch;
+    }
+  
+    .header-actions .btn-secondary,
+    .header-actions .btn-primary {
+        flex: 1;
+        justify-content: center;
+    }
+  
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+  
+    .document-overview,
+    .overall-assessment,
+    .key-highlights,
+    .document-stats {
+        grid-column: span 1;
+    }
+  
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+  
+    .risk-overview {
+        flex-direction: column;
+        text-align: center;
+    }
+  
+    .qa-container {
+        grid-template-columns: 1fr;
+    }
+  
+    .flow-diagram {
+        flex-direction: column;
+    }
+  
+    .flow-arrow {
+        transform: rotate(90deg);
+    }
+  
+    .tab-navigation {
+        flex-wrap: wrap;
+    }
+  
+    .tab-btn {
+        min-width: auto;
+        flex: none;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .analysis-container {
+        padding: 0 1rem;
+    }
+  
+    .analysis-header {
+        padding: 1.5rem;
+    }
+  
+    .tab-panel {
+        padding: 1.5rem;
+    }
+  
+    .document-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+  
+    .header-actions {
+        flex-direction: column;
+    }
+  }
+  

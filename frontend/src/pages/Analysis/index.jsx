@@ -124,7 +124,7 @@ export default function Analysis() {
         <div className="nav-container">
           <div className="nav-logo">
             <span className="logo-text">L2S</span>
-            <span className="logo-name">Legalese-to-Simple-ese</span>
+            <span className="logo-name">Legalese-to-Simpleese</span>
           </div>
           <div className="nav-menu">
             <Link to="/" className="nav-link">← New Analysis</Link>

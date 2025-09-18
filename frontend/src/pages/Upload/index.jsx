@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState,useContext } from 'react'
+import { useEffect, useRef, useState, useContext } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import CustomLoadingOverlay from '../../components/CustomLoadingOverlay'
 import './index.css'
@@ -6,7 +6,6 @@ import './index.css'
 import AnalysisContext from '../../contexts/AnalysisContext'
 
 export default function Upload() {
-
   const { analysis, setAnalysis } = useContext(AnalysisContext);
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('upload')
@@ -35,7 +34,12 @@ export default function Upload() {
 
   function onFileSelected(file) {
     if (!file) return
-    const allowedTypes = ['application/pdf']
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain'
+    ]
     if (!allowedTypes.includes(file.type)) {
       alert('Please upload a PDF, DOC, DOCX, or TXT file.')
       return
@@ -49,46 +53,45 @@ export default function Upload() {
   }
 
   async function analyze(e) {
-  e.preventDefault();
+    e.preventDefault();
+    console.log("heye..", fileObj);
 
-  if (!hasFile && !pasteText.trim()) {
-    alert('Please upload a document or paste text to analyze.');
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const formData = new FormData();
-
-    if (hasFile && file) {
-      formData.append('file', file, file.name); // send file just like curl
-    } else if (pasteText.trim()) {
-      formData.append('text', pasteText); // optional: if backend also supports text
+    if (!hasFile && !pasteText.trim()) {
+      alert('Please upload a document or paste text to analyze.');
+      return;
     }
 
-    const response = await fetch('http://localhost:8000/api/upload/process-document', {
-      method: 'POST',
-      body: formData,
-    });
+    setLoading(true);
 
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
+    try {
+      const formData = new FormData();
+
+      if (hasFile && fileObj) {
+        formData.append('file', fileObj, fileObj.name);
+      } else if (pasteText.trim()) {
+        formData.append('text', pasteText);
+      }
+
+      const response = await fetch('http://35.164.15.23:8000/api/upload/process-document', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(result)
+
+      setAnalysis(result);
+      navigate('/analysis');
+    } catch (err) {
+      alert(err.message || 'Analysis failed');
+    } finally {
+      setLoading(false);
     }
-
-    const result = await response.json();
-    console.log(result)
-
-    // whatever backend returns → save into analysis
-    setAnalysis(result);
-
-    navigate('/analysis');
-  } catch (err) {
-    alert(err.message || 'Analysis failed');
-  } finally {
-    setLoading(false);
   }
-}
 
   return (
     <div>
@@ -143,7 +146,7 @@ export default function Upload() {
                           <i className="fas fa-file-check"></i>
                         </div>
                         <h3>File Ready</h3>
-                        <p>File selected successfully</p>
+                        <p>{fileObj?.name} selected successfully</p>
                         <button className="browse-btn" type="button" onClick={(ev)=>{ev.stopPropagation(); setHasFile(false); fileInputRef.current?.click()}}>Change File</button>
                         <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt" style={{display:'none'}} onChange={e=>onFileSelected(e.target.files?.[0])} />
                       </>
@@ -160,32 +163,30 @@ export default function Upload() {
                 </div>
               )}
 
-
               <div className="analysis-features">
                 <h3>What You'll Get:</h3>
                 <div className="features-grid">
                   <div className="feature-item">
-                <div className='icon-with-text'>
-                    <i className="fas fa-language"></i>
-                    <h4>Plain Language Summary</h4>
-                </div>
+                    <div className='icon-with-text'>
+                      <i className="fas fa-language"></i>
+                      <h4>Plain Language Summary</h4>
+                    </div>
                     <p>Key terms explained in simple language</p>
                   </div>
                   <div className="feature-item">
                     <div className='icon-with-text'>
-                    <i className="fas fa-exclamation-triangle"></i>
-                    <h4>Risk Assessment</h4>
+                      <i className="fas fa-exclamation-triangle"></i>
+                      <h4>Risk Assessment</h4>
                     </div>
                     <p>Potential risks and problematic clauses</p>
                   </div>
                   <div className="feature-item">
                     <div className='icon-with-text'>
-                    <i className="fas fa-comments"></i>
-                    <h4>Interactive Q&A</h4>
+                      <i className="fas fa-comments"></i>
+                      <h4>Interactive Q&A</h4>
                     </div>
                     <p>Ask questions about specific clauses</p>
                   </div>
-                  
                 </div>
               </div>
 
@@ -216,4 +217,3 @@ export default function Upload() {
     </div>
   )
 }
-

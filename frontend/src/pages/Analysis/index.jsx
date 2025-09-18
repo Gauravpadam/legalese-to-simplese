@@ -39,8 +39,8 @@ export default function Analysis() {
 
   useEffect(()=>{
     console.log(analysis)
-    // setAnalysisData(analysis)
-    // setLoading(false)
+    setAnalysisData(analysis.document_analysis)
+    setLoading(false)
   },[])
 
   const handleTabClick = (tabName) => {
@@ -53,30 +53,79 @@ export default function Analysis() {
     // handleSendMessage(question)
   }
 
-  const handleSendMessage = (messageText = currentMessage) => {
-    if (!messageText.trim()) return
+  // const handleSendMessage = (messageText = currentMessage) => {
+  //   if (!messageText.trim()) return
 
-    // Add user message to chat
-    const newUserMessage = {
-      type: 'user',
-      content: messageText
+  //   // Add user message to chat
+  //   const newUserMessage = {
+  //     type: 'user',
+  //     content: messageText
+  //   }
+
+  //   setChatMessages(prev => [...prev, newUserMessage])
+    
+  //   // Clear current message
+  //   setCurrentMessage('')
+
+  //   // Here you would typically make an API call to get the AI response
+  //   // For now, adding a placeholder response
+  //   setTimeout(() => {
+  //     const aiResponse = {
+  //       type: 'assistant',
+  //       content: `I understand you're asking about: "${messageText}". This would typically be answered by analyzing the specific clauses in your contract. Please implement the AI response API integration here.`
+  //     }
+  //     setChatMessages(prev => [...prev, aiResponse])
+  //   }, 1000)
+  // }
+
+  const handleSendMessage = async (messageText = currentMessage) => {
+  if (!messageText.trim()) return;
+
+  // Add user message to chat
+  const newUserMessage = {
+    type: 'user',
+    content: messageText,
+  };
+  setChatMessages((prev) => [...prev, newUserMessage]);
+
+  // Clear current message
+  setCurrentMessage('');
+
+  try {
+    // Send POST request
+    const res = await fetch('/your-api-endpoint', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        doc_id: analysis.document_id,
+        question: messageText,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch AI response');
     }
 
-    setChatMessages(prev => [...prev, newUserMessage])
-    
-    // Clear current message
-    setCurrentMessage('')
+    const data = await res.json();
 
-    // Here you would typically make an API call to get the AI response
-    // For now, adding a placeholder response
-    setTimeout(() => {
-      const aiResponse = {
-        type: 'assistant',
-        content: `I understand you're asking about: "${messageText}". This would typically be answered by analyzing the specific clauses in your contract. Please implement the AI response API integration here.`
-      }
-      setChatMessages(prev => [...prev, aiResponse])
-    }, 1000)
+    // Expected response: { response: "...", explanation: "..." }
+    const aiResponse = {
+      type: 'assistant',
+      content: `${data.response}\n\nExplanation: ${data.explanation}`,
+    };
+
+    setChatMessages((prev) => [...prev, aiResponse]);
+  } catch (error) {
+    console.error(error);
+    const errorMessage = {
+      type: 'assistant',
+      content: 'Sorry, something went wrong while fetching the AI response.',
+    };
+    setChatMessages((prev) => [...prev, errorMessage]);
   }
+};
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {

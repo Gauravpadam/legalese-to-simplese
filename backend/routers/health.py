@@ -74,3 +74,12 @@ async def test_endpoint():
         human_message="What is the capital of France?"
     )
     
+@router.get("/test-guardrail")
+async def test_guardrail_endpoint():
+    from services.custom_guardrail_service import validate_user_question
+    test_question = "Is it legal to download movies for free?"
+    is_valid = await validate_user_question(test_question)
+    return {
+        "question": test_question,
+        "is_valid": is_valid
+    }

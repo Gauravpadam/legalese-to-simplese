@@ -49,76 +49,46 @@ export default function Upload() {
   }
 
   async function analyze(e) {
-    if (!hasFile && !pasteText.trim()) {
-      e.preventDefault()
-      alert('Please upload a document or paste text to analyze.')
-      return
-    }
-    setLoading(true)
+  e.preventDefault();
 
-    try {
-      setAnalysis({
-  "Document_Type": "Rental Agreement",
-  "Main_Purpose": "To establish the terms and conditions for the rental of a residential property between a landlord and a tenant.",
-  "Key_Highlights": [
-    {
-      "data": "11-month fixed term tenancy starting October 1, 2025."
-    },
-    {
-      "data": "Monthly rent of ₹25,000 due by the 5th, with a steep ₹500/day late fee after 3 days."
-    },
-    {
-      "data": "Refundable security deposit of ₹75,000, subject to deductions for unpaid rent, damages, or utilities."
-    },
-    {
-      "data": "Either party can terminate with one-month written notice: early vacating without notice forfeits the deposit."
-    }
-  ],
-  "Risk_Assessment": {
-    "Risk_Score": 9,
-    "High_Risk": [
-      {
-        "title": "Steep Late Fee Penalty",
-        "description": "₹500/day late fee after 3 days is unusually high and may be unenforceable in court."
-      },
-      {
-        "title": "Deposit Forfeiture Clause",
-        "description": "Complete deposit forfeiture for early termination may be excessive and legally questionable."
-      }
-    ],
-    "Medium_Risk": [
-      {
-        "title": "Vague Maintenance Terms",
-        "description": "Minor repairs and major structural issues are not clearly defined."
-      },
-      {
-        "title": "Notice Period Ambiguity",
-        "description": "One-month notice requirement lacks specific delivery method requirements."
-      }
-    ]
-  },
-  "Key_Terms": [
-    {
-      "title": "Monthly Rent",
-      "description": "₹25,000 Due by 5th of each month"
-    },
-    {
-      "title": "Lease Duration",
-      "description": "11 months Fixed term starting October 1, 2025"
-    }
-  ],
-  "Suggested_Questions": [
-    "What happens if I pay rent late?",
-    "Can I terminate the lease early?"
-  ]
-})  
-      navigate('/analysis')
-    } catch (err) {
-      alert(err.message || 'Analysis failed')
-    } finally {
-      setLoading(false)
-    }
+  if (!hasFile && !pasteText.trim()) {
+    alert('Please upload a document or paste text to analyze.');
+    return;
   }
+
+  setLoading(true);
+
+  try {
+    const formData = new FormData();
+
+    if (hasFile && file) {
+      formData.append('file', file, file.name); // send file just like curl
+    } else if (pasteText.trim()) {
+      formData.append('text', pasteText); // optional: if backend also supports text
+    }
+
+    const response = await fetch('http://localhost:8000/api/upload/process-document', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log(result)
+
+    // whatever backend returns → save into analysis
+    setAnalysis(result);
+
+    navigate('/analysis');
+  } catch (err) {
+    alert(err.message || 'Analysis failed');
+  } finally {
+    setLoading(false);
+  }
+}
 
   return (
     <div>

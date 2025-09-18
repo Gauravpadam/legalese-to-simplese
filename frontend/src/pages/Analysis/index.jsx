@@ -39,8 +39,8 @@ export default function Analysis() {
 
   useEffect(()=>{
     console.log(analysis)
-    setAnalysisData(analysis)
-    setLoading(false)
+    // setAnalysisData(analysis)
+    // setLoading(false)
   },[])
 
   const handleTabClick = (tabName) => {

@@ -58,6 +58,10 @@ frontend/.env.*
 .idea/
 *.swp
 
+# venv
+legalesenv
+
+
 # MacOS
 .DS_Store
 .AppleDouble

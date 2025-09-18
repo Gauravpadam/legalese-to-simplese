@@ -90,3 +90,18 @@ async def test_guardrail_endpoint():
         "question": test_question,
         "is_valid": is_valid
     }
+
+@router.get("/test-embeddings")
+async def test_embeddings_endpoint():
+    from services.llm_service import get_embedding
+    test_text = "Sample text for embedding"
+    embedding = await get_embedding(test_text)
+    if embedding:
+        logger.info(f"Embedding generated successfully for text: {test_text}")
+    else:
+        logger.error(f"Failed to generate embedding for text: {test_text}")
+    return {
+        "text": test_text,
+        "embedding": embedding,
+        "embedding_length": len(embedding) if embedding else 0
+    }

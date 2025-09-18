@@ -383,3 +383,55 @@ async def test_elasticsearch_chunks():
             status_code=500,
             detail=f"Failed to fetch chunks from Elasticsearch: {str(e)}"
         )
+
+@router.get("/test-search-by-tags")
+async def test_search_by_tags(doc_id: str = "e859e40d-f6be-41d2-80e7-14d272805953", tags: str = "sole_discretion"):
+    """Test searching for document chunks that match ALL specified tags - returns raw function output"""
+    try:
+        # Get AWS client for embeddings
+        aws_client = get_aws_bedrock_client()
+        
+        # Initialize Bedrock embeddings
+        embeddings = BedrockEmbeddings(
+            client=aws_client,
+            model_id="cohere.embed-english-v3"
+        )
+        
+        # Create Elasticsearch service
+        es_service = ElasticsearchService(
+            es_url=os.getenv('ELASTICSEARCH_URL', 'https://my-elasticsearch-project-b07525.es.us-central1.gcp.elastic.cloud:443'),
+            api_key=os.getenv('ELASTICSEARCH_API_KEY', 'SVQ3Y1Y1a0JscUh2YzI0Rmlkd2Q6eTBMVHBudW14Wm53WjFydGM1SFVsZw=='),
+            embedding_model=embeddings
+        )
+        
+        # Create Elasticsearch client
+        from elasticsearch import Elasticsearch
+        
+        client_params = {
+            "hosts": [es_service.es_url],
+            "verify_certs": True
+        }
+        
+        if es_service.api_key:
+            client_params["api_key"] = es_service.api_key
+        
+        es_client = Elasticsearch(**client_params)
+        
+        # Parse tags from comma-separated string
+        tags_list = [tag.strip() for tag in tags.split(',') if tag.strip()]
+        
+        # Call the function and return exactly what it returns
+        return es_service.search_doc_by_tags_all(
+            es=es_client,
+            index_name="tagged_legal_docs",
+            doc_id=doc_id,
+            tags=tags_list,
+            size=10
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to test search by tags: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to test search by tags: {str(e)}"
+        )

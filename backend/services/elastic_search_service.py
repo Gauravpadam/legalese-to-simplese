@@ -465,3 +465,54 @@ Return JSON ONLY with keys: risk_tags, explanation, section_guess."""
                 status_code=500,
                 detail=f"Failed to ingest tagged chunks: {str(e)}"
             )
+
+    def search_doc_by_tags_all(
+        self,
+        es: Elasticsearch,
+        index_name: str,
+        doc_id: str,
+        tags: List[str],
+        size: int = 10
+    ) -> List[str]:
+        """
+        Retrieve texts for a specific doc_id that match ALL of the given tags.
+
+        Args:
+            es: Elasticsearch client
+            index_name: index to search
+            doc_id: the document ID to filter on
+            tags: list of tag slugs to match (all must be present)
+            size: max number of results
+
+        Returns:
+            list of matching chunk texts
+        """
+        try:
+            logger.debug(f"🔍 Searching for doc_id '{doc_id}' with ALL tags: {tags}")
+            
+            # must contain doc_id
+            must_filters = [{"term": {"doc_id": doc_id}}]
+
+            # must contain each tag
+            for tag in tags:
+                must_filters.append({"term": {"risk_tags": tag}})
+
+            query = {
+                "size": size,
+                "query": {
+                    "bool": {
+                        "must": must_filters
+                    }
+                },
+                "_source": ["text"]
+            }
+
+            res = es.search(index=index_name, body=query)
+            matching_texts = [hit["_source"]["text"] for hit in res["hits"]["hits"]]
+            
+            logger.info(f"✅ Found {len(matching_texts)} chunks matching all tags for doc_id '{doc_id}'")
+            return matching_texts
+            
+        except Exception as e:
+            logger.error(f"❌ Error searching by tags: {str(e)}")
+            return []

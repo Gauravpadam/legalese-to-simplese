@@ -30,7 +30,7 @@ export default function Analysis() {
   const fetchAnalysisData = async () => {
     try {
       setLoading(true)
-      const response = await fetch('data.json')
+      const response = await fetch('http://localhost:8000/api/health/document-analysis')
       if (!response.ok) {
         throw new Error('Failed to fetch analysis data')
       }
@@ -125,7 +125,7 @@ export default function Analysis() {
         <div className="nav-container">
           <div className="nav-logo">
             <span className="logo-text">L2S</span>
-            <span className="logo-name">Legalese-to-Simple-ese</span>
+            <span className="logo-name">Legalese-to-Simpleese</span>
           </div>
           <div className="nav-menu">
             <Link to="/" className="nav-link">← New Analysis</Link>

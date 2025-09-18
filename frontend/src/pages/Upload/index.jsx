@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState,useContext } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import CustomLoadingOverlay from '../../components/CustomLoadingOverlay'
 import './index.css'
 
+import AnalysisContext from '../../contexts/AnalysisContext'
+
 export default function Upload() {
+
+  const { analysis, setAnalysis } = useContext(AnalysisContext);
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('upload')
   const [hasFile, setHasFile] = useState(false)
@@ -31,7 +35,7 @@ export default function Upload() {
 
   function onFileSelected(file) {
     if (!file) return
-    const allowedTypes = ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain']
+    const allowedTypes = ['application/pdf']
     if (!allowedTypes.includes(file.type)) {
       alert('Please upload a PDF, DOC, DOCX, or TXT file.')
       return
@@ -53,47 +57,61 @@ export default function Upload() {
     setLoading(true)
 
     try {
-      const apiUrl = import.meta.env.VITE_ANALYZE_URL
-      let payload
-      let headers = {}
-      if (apiUrl) {
-        if (hasFile && fileObj) {
-          const fd = new FormData()
-          fd.append('file', fileObj)
-          fd.append('party1', party1Ref.current?.value || '')
-          fd.append('party2', party2Ref.current?.value || '')
-          payload = fd
-        } else {
-          headers['Content-Type'] = 'application/json'
-          payload = JSON.stringify({
-            text: pasteText,
-            party1: party1Ref.current?.value || '',
-            party2: party2Ref.current?.value || ''
-          })
-        }
-        const res = await fetch(apiUrl, { method: 'POST', body: payload, headers })
-        if (!res.ok) throw new Error('Failed to analyze document')
-        const data = await res.json()
-        localStorage.setItem('legalAnalysisData', JSON.stringify({
-          hasFile,
-          pasteText,
-          party1: party1Ref.current?.value || '',
-          party2: party2Ref.current?.value || '',
-          result: data,
-          timestamp: new Date().toISOString()
-        }))
-      } else {
-        // Fallback: simulate API
-        await new Promise(r => setTimeout(r, 1800))
-        localStorage.setItem('legalAnalysisData', JSON.stringify({
-          hasFile,
-          pasteText,
-          party1: party1Ref.current?.value || '',
-          party2: party2Ref.current?.value || '',
-          result: { summary: 'Mock analysis result' },
-          timestamp: new Date().toISOString()
-        }))
+      setAnalysis({
+  "Document_Type": "Rental Agreement",
+  "Main_Purpose": "To establish the terms and conditions for the rental of a residential property between a landlord and a tenant.",
+  "Key_Highlights": [
+    {
+      "data": "11-month fixed term tenancy starting October 1, 2025."
+    },
+    {
+      "data": "Monthly rent of ₹25,000 due by the 5th, with a steep ₹500/day late fee after 3 days."
+    },
+    {
+      "data": "Refundable security deposit of ₹75,000, subject to deductions for unpaid rent, damages, or utilities."
+    },
+    {
+      "data": "Either party can terminate with one-month written notice: early vacating without notice forfeits the deposit."
+    }
+  ],
+  "Risk_Assessment": {
+    "Risk_Score": 9,
+    "High_Risk": [
+      {
+        "title": "Steep Late Fee Penalty",
+        "description": "₹500/day late fee after 3 days is unusually high and may be unenforceable in court."
+      },
+      {
+        "title": "Deposit Forfeiture Clause",
+        "description": "Complete deposit forfeiture for early termination may be excessive and legally questionable."
       }
+    ],
+    "Medium_Risk": [
+      {
+        "title": "Vague Maintenance Terms",
+        "description": "Minor repairs and major structural issues are not clearly defined."
+      },
+      {
+        "title": "Notice Period Ambiguity",
+        "description": "One-month notice requirement lacks specific delivery method requirements."
+      }
+    ]
+  },
+  "Key_Terms": [
+    {
+      "title": "Monthly Rent",
+      "description": "₹25,000 Due by 5th of each month"
+    },
+    {
+      "title": "Lease Duration",
+      "description": "11 months Fixed term starting October 1, 2025"
+    }
+  ],
+  "Suggested_Questions": [
+    "What happens if I pay rent late?",
+    "Can I terminate the lease early?"
+  ]
+})  
       navigate('/analysis')
     } catch (err) {
       alert(err.message || 'Analysis failed')

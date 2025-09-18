@@ -307,7 +307,7 @@ async def process_document(file: UploadFile = Depends(validate_file)):
                 logger.error(f"❌ Failed to ingest to Elasticsearch: {es_error}")
                 elasticsearch_ingested = False
                 ingested_count = 0
-            
+          
             duration = time.time() - start_time
             
             log_with_context(

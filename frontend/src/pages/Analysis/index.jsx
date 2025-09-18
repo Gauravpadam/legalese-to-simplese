@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState,useContext } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './index.css'
+import AnalysisContext from '../../contexts/AnalysisContext';
 
 export default function Analysis() {
+  const { analysis } = useContext(AnalysisContext);
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('summary')
   const [analysisData, setAnalysisData] = useState(null)
@@ -16,33 +18,30 @@ export default function Analysis() {
     }
   ]);
 
-  useEffect(() => {
-    const data = localStorage.getItem('legalAnalysisData')
-    if (!data) {
-      const id = setTimeout(() => navigate('/upload'), 300)
-      return () => clearTimeout(id)
-    } else {
-      // Fetch analysis data from API
-      fetchAnalysisData()
-    }
-  }, [navigate])
+  
 
-  const fetchAnalysisData = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch('http://localhost:8000/api/health/document-analysis')
-      if (!response.ok) {
-        throw new Error('Failed to fetch analysis data')
-      }
-      const data = await response.json()
-      setAnalysisData(data)
-    } catch (err) {
-      setError(err.message)
-      console.error('Error fetching analysis data:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // const fetchAnalysisData = async () => {
+  //   try {
+  //     setLoading(true)
+  //     const response = await fetch('data.json')
+  //     if (!response.ok) {
+  //       throw new Error('Failed to fetch analysis data')
+  //     }
+  //     const data = await response.json()
+  //     setAnalysisData(data)
+  //   } catch (err) {
+  //     setError(err.message)
+  //     console.error('Error fetching analysis data:', err)
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
+
+  useEffect(()=>{
+    console.log(analysis)
+    setAnalysisData(analysis)
+    setLoading(false)
+  },[])
 
   const handleTabClick = (tabName) => {
     setActiveTab(tabName)

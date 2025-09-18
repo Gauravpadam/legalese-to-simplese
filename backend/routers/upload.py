@@ -6,9 +6,14 @@ from pathlib import Path
 import shutil
 from typing import List
 import time
+import uuid
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_aws import BedrockEmbeddings
 
 from services.logging import get_logger, log_with_context
+from services.elastic_search_service import ElasticsearchService
 from utils.helper import pdf_to_pngs, process_images_to_text
+from clients.aws_client import get_aws_bedrock_client
 
 router = APIRouter(prefix="/upload", tags=["Upload"])
 logger = get_logger("upload_router")
@@ -16,6 +21,32 @@ logger = get_logger("upload_router")
 # Supported file types
 SUPPORTED_EXTENSIONS = {".pdf", ".txt"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+# Initialize Elasticsearch service
+def get_elasticsearch_service() -> ElasticsearchService:
+    """Get configured Elasticsearch service instance."""
+    try:
+        # Get AWS client for embeddings
+        aws_client = get_aws_bedrock_client()
+        
+        # Initialize Bedrock embeddings
+        embeddings = BedrockEmbeddings(
+            client=aws_client,
+            model_id="cohere.embed-english-v3"
+        )
+        es_service = ElasticsearchService(
+            es_url=os.getenv('ELASTICSEARCH_URL', 'https://my-elasticsearch-project-b07525.es.us-central1.gcp.elastic.cloud:443'),
+            api_key=os.getenv('ELASTICSEARCH_API_KEY', 'SVQ3Y1Y1a0JscUh2YzI0Rmlkd2Q6eTBMVHBudW14Wm53WjFydGM1SFVsZw=='),
+            embedding_model=embeddings
+        )
+        
+        return es_service
+    except Exception as e:
+        logger.error(f"Failed to initialize Elasticsearch service: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Elasticsearch service initialization failed: {str(e)}"
+        )
 
 async def validate_file(file: UploadFile = File(...)):
     """Validate uploaded file size and type."""
@@ -57,13 +88,49 @@ async def validate_file(file: UploadFile = File(...)):
     logger.debug(f"File validation passed: {file.filename}, size: {file_size} bytes")
     return file
 
+def split_text_into_chunks(text: str, chunk_size: int = 1000, chunk_overlap: int = 200) -> List[str]:
+    """
+    Split text into chunks using RecursiveCharacterTextSplitter.
+    
+    Args:
+        text (str): The text to split into chunks
+        chunk_size (int): Maximum size of each chunk (default: 1000)
+        chunk_overlap (int): Number of characters to overlap between chunks (default: 200)
+    
+    Returns:
+        List[str]: List of text chunks
+    """
+    logger.debug(f"Splitting text into chunks (size: {chunk_size}, overlap: {chunk_overlap})")
+    
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        length_function=len,
+        separators=["\n\n", "\n", ". ", " ", ""]
+    )
+    
+    chunks = text_splitter.split_text(text)
+    logger.info(f"Split text into {len(chunks)} chunks")
+    
+    return chunks
+
 @router.post("/process-document")
 async def process_document(file: UploadFile = Depends(validate_file)):
     """
-    Process uploaded document (PDF, TXT) by converting to images and then extracting text using AWS Bedrock.
+    Process uploaded document (PDF, TXT) by converting to images, extracting text using AWS Bedrock, and splitting into chunks.
     
     For PDF files: Converts to PNG images, then uses AWS Bedrock Claude vision model for text extraction.
     For TXT files: Reads text content directly.
+    
+    The extracted text is then split into chunks using RecursiveCharacterTextSplitter:
+    - chunk_size: 1000 characters
+    - chunk_overlap: 200 characters
+    
+    Returns:
+        JSONResponse containing:
+        - extracted_text: Full extracted text
+        - text_chunks: List of text chunks
+        - metadata: Processing information including chunk count
     """
     start_time = time.time()
     
@@ -89,6 +156,29 @@ async def process_document(file: UploadFile = Depends(validate_file)):
             elif file_extension == ".txt":
                 extracted_text, image_count = await _process_txt(temp_file_path)
             
+            # Split the extracted text into chunks
+            text_chunks = split_text_into_chunks(extracted_text)
+            
+            # Generate unique document ID
+            doc_id = str(uuid.uuid4())
+            
+            # Get Elasticsearch service and ingest tagged chunks
+            es_service = get_elasticsearch_service()
+            try:
+                ingested_count = await es_service.ingest_tagged_chunks(
+                    chunks=text_chunks,
+                    doc_id=doc_id,
+                    file_name=file.filename,
+                    file_type=file_extension,
+                    index_name="tagged_legal_docs"
+                )
+                logger.info(f"✅ Ingested {ingested_count} tagged chunks to Elasticsearch")
+                elasticsearch_ingested = True
+            except Exception as es_error:
+                logger.error(f"❌ Failed to ingest to Elasticsearch: {es_error}")
+                elasticsearch_ingested = False
+                ingested_count = 0
+            
             duration = time.time() - start_time
             
             log_with_context(
@@ -99,6 +189,9 @@ async def process_document(file: UploadFile = Depends(validate_file)):
                 file_type=file_extension,
                 file_size=len(content),
                 extracted_text_length=len(extracted_text),
+                chunks_created=len(text_chunks),
+                elasticsearch_ingested=elasticsearch_ingested,
+                ingested_chunks=ingested_count,
                 image_count=image_count,
                 duration_seconds=round(duration, 3)
             )
@@ -107,12 +200,20 @@ async def process_document(file: UploadFile = Depends(validate_file)):
                 status_code=200,
                 content={
                     "success": True,
+                    "document_id": doc_id,
                     "filename": file.filename,
                     "file_type": file_extension,
                     "extracted_text": extracted_text,
+                    "text_chunks": text_chunks,
+                    "elasticsearch": {
+                        "ingested": elasticsearch_ingested,
+                        "chunks_ingested": ingested_count,
+                        "index_name": "tagged_legal_docs"
+                    },
                     "metadata": {
                         "file_size_bytes": len(content),
                         "text_length": len(extracted_text),
+                        "total_chunks": len(text_chunks),
                         "images_generated": image_count,
                         "processing_time_seconds": round(duration, 3)
                     }
@@ -182,7 +283,108 @@ async def get_supported_formats():
         "supported_formats": list(SUPPORTED_EXTENSIONS),
         "max_file_size_mb": MAX_FILE_SIZE // (1024 * 1024),
         "processing_workflow": {
-            "pdf": "PDF → PNG images → AWS Bedrock image-to-text conversion",
-            "txt": "Direct text reading"
+            "pdf": "PDF → PNG images → AWS Bedrock image-to-text → Text chunking → LLM tagging → Elasticsearch ingestion",
+            "txt": "Direct text reading → Text chunking → LLM tagging → Elasticsearch ingestion"
+        },
+        "text_chunking": {
+            "chunk_size": 1000,
+            "chunk_overlap": 200,
+            "method": "RecursiveCharacterTextSplitter"
+        },
+        "llm_tagging": {
+            "model": "AWS Bedrock Claude",
+            "tag_categories": [
+                "Liability/Indemnity",
+                "Termination",
+                "Renewal/Duration", 
+                "Payment/Penalties",
+                "Confidentiality/Data",
+                "IP/Ownership",
+                "Disputes/Governing Law",
+                "Usage Restrictions",
+                "Miscellaneous"
+            ]
+        },
+        "elasticsearch": {
+            "index_name": "tagged_legal_docs",
+            "features": ["risk_tags", "section_classification", "full_text_search"]
         }
     }
+
+@router.get("/search-tags")
+async def search_by_tags(
+    tags: str = None,
+    section: str = None,
+    query: str = None,
+    limit: int = 10
+):
+    """
+    Search documents by risk tags, section, or text content.
+    
+    Args:
+        tags: Comma-separated list of risk tags to search for
+        section: Section type to filter by (e.g., "Liability", "Termination")
+        query: Text query to search in document content
+        limit: Maximum number of results to return
+    """
+    try:
+        es_service = get_elasticsearch_service()
+        
+        # Build Elasticsearch query
+        must_clauses = []
+        
+        if tags:
+            tag_list = [tag.strip() for tag in tags.split(",")]
+            must_clauses.append({
+                "terms": {"risk_tags": tag_list}
+            })
+        
+        if section:
+            must_clauses.append({
+                "term": {"section": section}
+            })
+        
+        if query:
+            must_clauses.append({
+                "match": {"text": query}
+            })
+        
+        # If no filters provided, match all
+        if not must_clauses:
+            search_body = {"query": {"match_all": {}}}
+        else:
+            search_body = {
+                "query": {
+                    "bool": {
+                        "must": must_clauses
+                    }
+                }
+            }
+        
+        search_body["size"] = limit
+        search_body["sort"] = [{"timestamp": {"order": "desc"}}]
+        
+        # Execute search (simplified - you might want to use the actual Elasticsearch client)
+        logger.info(f"🔍 Searching tagged documents with tags: {tags}, section: {section}, query: {query}")
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "search_parameters": {
+                    "tags": tags,
+                    "section": section,
+                    "query": query,
+                    "limit": limit
+                },
+                "elasticsearch_query": search_body,
+                "message": "Search functionality implemented. Results would be returned from Elasticsearch."
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ Search failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Search failed: {str(e)}"
+        )

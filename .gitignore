@@ -1,0 +1,78 @@
+# ---- Python (backend) ----
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Pytest / coverage
+.pytest_cache/
+.coverage*
+htmlcov/
+.cache/
+
+# Logs & runtime
+*.log
+*.pid
+*.sqlite3
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+
+# Mypy / type checking
+.mypy_cache/
+.dmypy.json
+
+# ---- Node / Frontend ----
+node_modules/
+.npm/
+.pnpm-store/
+
+# Vite / build
+frontend/dist/
+frontend/.vite/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# venv
+legalesenv
+
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# System files
+Thumbs.db
+Desktop.ini
+
+# Coverage / reports (JS)
+coverage/
+
+# Misc
+*.retry

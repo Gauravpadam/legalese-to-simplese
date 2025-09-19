@@ -16,8 +16,10 @@ class ElasticsearchService:
     """
     Service class to handle Elasticsearch operations including document ingestion and retrieval.
     """
+
+    _elasticSearchStore = None
     
-    def __init__(self, embedding_model: OllamaEmbeddings, es_url: str = "http://localhost:9200", api_key: str = None):
+    def __init__(self, es_url: str = "http://localhost:9200"):
         """
         Initialize the Elasticsearch service.
         
@@ -26,7 +28,7 @@ class ElasticsearchService:
             es_url: Elasticsearch URL (default: http://localhost:9200)
             api_key: API key for Elasticsearch authentication
         """
-        self.embedding_model = OllamaClient.get_embedding_client()
+        self.embedding_model = OllamaClient.get_embedding_client() # This wont change unless the programmer changes it
         self.es_url = es_url
         logger.info(f"🔧 Initialized ElasticsearchService with URL: {es_url}")
     
@@ -57,8 +59,12 @@ class ElasticsearchService:
             # if self.api_key:
             #     connection_params["es_api_key"] = self.api_key
             
-            vector_store = ElasticsearchStore(**connection_params)
-            logger.info(f"✅ Vector store created successfully for index: {index_name}")
+            if not self._elasticSearchStore:
+
+                vector_store = ElasticsearchStore(**connection_params)
+                self._elasticSearchStore = vector_store
+                logger.info(f"✅ Vector store created successfully for index: {index_name}")
+            
             return vector_store
         except Exception as es_error:
             logger.error(f"❌ Failed to create vector store: {str(es_error)}")
@@ -132,7 +138,7 @@ class ElasticsearchService:
             # Create vector store
             vector_store = self.create_vector_store(index_name)
             
-            # Create retriever with optional search parameters
+            # Keeping this in JUST BECAUSE search kwargs may change sometime
             if search_kwargs:
                 retriever = vector_store.as_retriever(search_kwargs=search_kwargs)
                 logger.debug(f"🔧 Retriever created with custom search kwargs: {search_kwargs}")
@@ -150,7 +156,7 @@ class ElasticsearchService:
                 detail=f"Failed to create document retriever: {str(retriever_error)}"
             )
     
-    def search_documents(self, query: str, index_name: str = "workplace_index", k: int = 4) -> List[Document]:
+    def search_documents(self, query: str, index_name: str = "doc_index", k: int = 4) -> List[Document]:
         """
         Search for relevant documents in Elasticsearch.
         
@@ -185,38 +191,40 @@ class ElasticsearchService:
                 detail=f"Failed to search documents: {str(search_error)}"
             )
     
-    def get_index_info(self, index_name: str = "workplace_index") -> Dict[str, Any]:
-        """
-        Get information about an Elasticsearch index.
+    # Good to have (currently useless)
+
+    # def get_index_info(self, index_name: str = "workplace_index") -> Dict[str, Any]:
+    #     """
+    #     Get information about an Elasticsearch index.
         
-        Args:
-            index_name: Name of the Elasticsearch index (default: workplace_index)
+    #     Args:
+    #         index_name: Name of the Elasticsearch index (default: workplace_index)
             
-        Returns:
-            Dict containing index information
-        """
-        try:
-            logger.debug(f"📊 Getting info for index: {index_name}")
+    #     Returns:
+    #         Dict containing index information
+    #     """
+    #     try:
+    #         logger.debug(f"📊 Getting info for index: {index_name}")
             
-            # Create vector store to access Elasticsearch client
-            vector_store = self.create_vector_store(index_name)
+    #         # Create vector store to access Elasticsearch client
+    #         vector_store = self.create_vector_store(index_name)
             
-            # This is a simplified version - you might want to expand this
-            # to get actual index statistics from the Elasticsearch client
-            info = {
-                "index_name": index_name,
-                "es_url": self.es_url,
-                "status": "connected"
-            }
+    #         # This is a simplified version - you might want to expand this
+    #         # to get actual index statistics from the Elasticsearch client
+    #         info = {
+    #             "index_name": index_name,
+    #             "es_url": self.es_url,
+    #             "status": "connected"
+    #         }
             
-            logger.info(f"✅ Retrieved info for index: {index_name}")
-            return info
+    #         logger.info(f"✅ Retrieved info for index: {index_name}")
+    #         return info
             
-        except Exception as info_error:
-            logger.error(f"❌ Failed to get index info: {str(info_error)}")
-            return {
-                "index_name": index_name,
-                "es_url": self.es_url,
-                "status": "error",
-                "error": str(info_error)
-            }
+    #     except Exception as info_error:
+    #         logger.error(f"❌ Failed to get index info: {str(info_error)}")
+    #         return {
+    #             "index_name": index_name,
+    #             "es_url": self.es_url,
+    #             "status": "error",
+    #             "error": str(info_error)
+    #         }

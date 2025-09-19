@@ -1,7 +1,6 @@
 import time
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-from langchain_aws import ChatBedrock, BedrockEmbeddings
-from clients.aws_client import get_aws_bedrock_client
+from langchain_core.messages import HumanMessage, SystemMessage
+from clients.ollama import OllamaClient
 from services.logging import get_logger, log_with_context
 
 logger = get_logger("llm_service")
@@ -20,25 +19,30 @@ async def ask_question(system_message: str, human_message: str):
     start_time = time.time()
     
     logger.info("Starting LLM question request")
-    logger.debug(f"System message length: {len(system_message)} chars")
-    logger.debug(f"Human message length: {len(human_message)} chars")
+    # logger.debug(f"System message length: {len(system_message)} chars")
+    # logger.debug(f"Human message length: {len(human_message)} chars")
     
     try:
-        bedrock_client = get_aws_bedrock_client()
-        logger.debug("AWS Bedrock client obtained successfully")
+        # bedrock_client = get_aws_bedrock_client()
+        # logger.debug("AWS Bedrock client obtained successfully")
         
-        model = ChatBedrock(
-                        model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
-                        # max_tokens=8192,
-                        client=bedrock_client,
-                        streaming=False,
-                    )
+        # model = ChatBedrock(
+        #                 model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
+        #                 # max_tokens=8192,
+        #                 client=bedrock_client,
+        #                 streaming=False,
+        #             )
+
+        model = OllamaClient.get_client()
         
-        logger.debug("ChatBedrock model initialized")
+        logger.debug("Llama model initialized")
+        logger.info("Received system message: {}".format(system_message))
+        logger.info("Received system message: {}".format(human_message))
         
         messages = [SystemMessage(content=system_message),
                     HumanMessage(content=human_message)]
 
+        
         logger.info("Invoking LLM model...")
         response = await model.ainvoke(messages)
         response_text = response.content
@@ -49,7 +53,7 @@ async def ask_question(system_message: str, human_message: str):
             "llm_service",
             "info",
             "LLM question completed successfully",
-            model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
+            model_id="llama3.1",
             system_msg_length=len(system_message),
             human_msg_length=len(human_message),
             response_length=len(response_text) if response_text else 0,
@@ -66,7 +70,7 @@ async def ask_question(system_message: str, human_message: str):
             "llm_service",
             "error",
             f"LLM question failed: {str(e)}",
-            model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
+            model_id="llama3.1",
             system_msg_length=len(system_message),
             human_msg_length=len(human_message),
             duration_seconds=round(duration, 3),
@@ -93,8 +97,7 @@ async def get_embedding(text):
     logger.debug(f"Original text length: {original_text_length} chars")
     
     try:
-        bedrock_client = get_aws_bedrock_client()
-        logger.debug("AWS Bedrock client obtained for embeddings")
+        embedding_model = OllamaClient.get_embedding_client()
         
         # Clean text
         text = text.replace("\n", " ")
@@ -103,15 +106,11 @@ async def get_embedding(text):
         if cleaned_text_length != original_text_length:
             logger.debug(f"Text cleaned, new length: {cleaned_text_length} chars")
         
-        bedrock_embeddings = BedrockEmbeddings(
-            model_id="cohere.embed-english-v3",
-            client=bedrock_client
-        )
         
-        logger.debug("BedrockEmbeddings model initialized")
+        logger.debug("OllamaEmbeddings model initialized")
         
         logger.info("Generating embedding...")
-        response = bedrock_embeddings.embed_query(text)
+        response = embedding_model.embed_query(text)
         
         duration = time.time() - start_time
         embedding_dimension = len(response) if response else 0
@@ -120,7 +119,7 @@ async def get_embedding(text):
             "llm_service",
             "info",
             "Text embedding completed successfully",
-            model_id="cohere.embed-english-v3",
+            model_id="nomic-embed-text",
             original_text_length=original_text_length,
             cleaned_text_length=cleaned_text_length,
             embedding_dimension=embedding_dimension,
@@ -136,7 +135,7 @@ async def get_embedding(text):
             "llm_service",
             "error",
             f"Text embedding failed: {str(e)}",
-            model_id="cohere.embed-english-v3",
+            model_id="nomic-embed-text",
             original_text_length=original_text_length,
             duration_seconds=round(duration, 3),
             error_type=type(e).__name__

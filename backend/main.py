@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 
 from routers.health import router as health_router
 from routers.upload import router as upload_router
@@ -15,18 +14,17 @@ configure_logging(
 
 logger = get_logger("main")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    logger.info("Starting Legalese to Simplese API...")
-    yield
-    # Shutdown
-    logger.info("Shutting down Legalese to Simplese API...")
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     # Startup
+#     logger.info("Starting Legalese to Simplese API...")
+#     yield
+#     # Shutdown
+#     logger.info("Shutting down Legalese to Simplese API...")
 
 app = FastAPI(
     title="Legalese to Simplese API", 
     version="0.1.0",
-    lifespan=lifespan
 )
 
 # CORS configuration (adjust origins as needed)

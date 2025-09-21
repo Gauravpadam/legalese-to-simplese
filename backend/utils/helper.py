@@ -76,6 +76,8 @@ def extract_text_from_pdf(pdf_path, txt_path):
             txt_file.write(extracted_text)
         
         logger.info(f"Successfully extracted {len(extracted_text)} characters and saved to {txt_path}")
+
+        return extracted_text
         
     except Exception as e:
         logger.error(f"Error extracting text from PDF {pdf_path}: {e}")

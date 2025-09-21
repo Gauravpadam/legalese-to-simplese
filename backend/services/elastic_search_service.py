@@ -18,6 +18,7 @@ class ElasticsearchService:
     """
 
     _elasticSearchStore = None
+    _vector_store = None
     
     def __init__(self, es_url: str = "http://localhost:9200"):
         """
@@ -32,7 +33,7 @@ class ElasticsearchService:
         self.es_url = es_url
         logger.info(f"🔧 Initialized ElasticsearchService with URL: {es_url}")
     
-    def create_vector_store(self, index_name: str) -> ElasticsearchStore:
+    def create_vector_store(self, index_name: str = "doc_index") -> ElasticsearchStore:
         """
         Create and return an Elasticsearch vector store instance.
         
@@ -60,12 +61,10 @@ class ElasticsearchService:
             #     connection_params["es_api_key"] = self.api_key
             
             if not self._elasticSearchStore:
-
-                vector_store = ElasticsearchStore(**connection_params)
-                self._elasticSearchStore = vector_store
+                self._elasticSearchStore = ElasticsearchStore(**connection_params)
                 logger.info(f"✅ Vector store created successfully for index: {index_name}")
             
-            return vector_store
+            return self._elasticSearchStore
         except Exception as es_error:
             logger.error(f"❌ Failed to create vector store: {str(es_error)}")
             raise HTTPException(

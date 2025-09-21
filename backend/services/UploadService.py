@@ -1,5 +1,6 @@
 from services.elastic_search_service import ElasticsearchService
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from langchain.schema import Document
 from services.llm_service import ask_question
 from utils.helper import extract_text_from_pdf
 from fastapi.responses import JSONResponse
@@ -196,7 +197,7 @@ class UploadService:
             self.logger.error(f"❌ Error analyzing document with LLM: {str(e)}")
             return self._get_default_analysis()
     
-    async def process_document(self, file: UploadFile = Depends(validate_file)):
+    async def process_document(self, file: UploadFile):
         """
         Process uploaded document (PDF, TXT) by converting to images, extracting text using AWS Bedrock, and splitting into chunks.
         
@@ -233,12 +234,19 @@ class UploadService:
                 image_count = 0
                 
                 if file_extension == ".pdf":
-                    extracted_text, image_count = await self._process_pdf(temp_file_path, temp_dir)
+                    extracted_text = await self._process_pdf(temp_file_path, temp_dir)
                 elif file_extension == ".txt":
-                    extracted_text, image_count = await self._process_txt(temp_file_path)
+                    extracted_text = await self._process_txt(temp_file_path)
                 
                 # Split the extracted text into chunks
                 text_chunks = self.split_text_into_chunks(extracted_text)
+
+                docs = []
+                for text_chunk in text_chunks:
+                    doc = Document(text_chunk)
+                    docs.append(doc)
+
+
                 
                 # Analyze the full document with LLM
                 self.logger.info("🤖 Analyzing document with LLM for structured output")
@@ -247,12 +255,10 @@ class UploadService:
                 # Generate unique document ID
                 doc_id = str(uuid.uuid4())
                 
-                # Get Elasticsearch service and ingest tagged chunks
-                self.elasticSearchService.create_vector_store()
                 
                 try:
-                    ingested_count = await self.elasticSearchService.ingest_documents(
-                        documents=text_chunks,
+                    ingested_count = self.elasticSearchService.ingest_documents(
+                        docs,
                         index_name="doc_index"
                     )
                     self.logger.info(f"✅ Ingested {ingested_count} tagged chunks to Elasticsearch")

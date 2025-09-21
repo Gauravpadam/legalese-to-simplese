@@ -72,8 +72,8 @@ def extract_text_from_pdf(pdf_path, txt_path):
         extracted_text = document[0].page_content
 
         # Write the formatted text to a .txt file
-        with open(txt_path, 'w', encoding='utf-8') as txt_file:
-            txt_file.write(extracted_text)
+        # with open(txt_path, 'w', encoding='utf-8') as txt_file:
+        #     txt_file.write(extracted_text)
         
         logger.info(f"Successfully extracted {len(extracted_text)} characters and saved to {txt_path}")
 

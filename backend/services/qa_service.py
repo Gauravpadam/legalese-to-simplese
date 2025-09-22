@@ -10,7 +10,7 @@ from services.elastic_search_service import ElasticsearchService
 import json
 
 
-async def process_user_question(question: str = "What is the related risk to the contract", doc_id: str = "e859e40d-f6be-41d2-80e7-14d272805953") -> Dict[str, Any]:
+async def process_user_question(question: str = "What is the related risk to the contract") -> Dict[str, Any]:
     """
     Processes a user question through guardrail validation.
     
@@ -27,20 +27,25 @@ async def process_user_question(question: str = "What is the related risk to the
     # Clean and normalize the question
     cleaned_question = question.strip()
     
-    # Step 2: Pass the cleaned question to custom guardrail service
-    is_question_valid = await validate_user_question(cleaned_question)
+    # # Step 2: Pass the cleaned question to custom guardrail service
+    # is_question_valid = await validate_user_question(cleaned_question)
 
     # Step 3: If question valid, we proceed
   
-    if not is_question_valid:
-        raise Exception("Your query violates policies")
+    # if not is_question_valid:
+    #     raise Exception("Your query violates policies")
 
 
-    chunks = await elasticService.search_documents(question)
+    chunks = elasticService.search_documents(question)
 
     # Now we use the relevant doc chunks and the question to get a final answer
-    if chunks and 'content' in chunks:
-        context = chunks['content']
+    chunked_text = []
+    if chunks:
+        context = """<context>\n"""
+        for chunk in chunks:
+            context+=chunk.page_content
+            chunked_text.append(chunk.page_content)
+        context+="</context>"
     else:
         context = "No relevant document content found."
 
@@ -59,33 +64,13 @@ async def process_user_question(question: str = "What is the related risk to the
     model = OllamaClient.get_client()
 
     response = await model.ainvoke(messages)
+
     response_text = response.content
 
-    # Parse the JSON response
-    try:
-        response_json = json.loads(response_text)
-    except json.JSONDecodeError:
-        raise ValueError("Invalid JSON response from LLM")
-
     # Extract the final answer
-    final_answer = response_json.get("answer", "No answer found.")
+    final_answer = response_text
     return {
         "question": question,
         "final_answer": final_answer,
-        "chunks": chunks,
+        "chunks": chunked_text,
     }
-
-
-async def main():
-    """Main function to run the QA service."""
-    try:
-        result = await process_user_question()
-        print("QA Service Result:")
-        print(json.dumps(result, indent=2))
-    except Exception as e:
-        print(f"Error running QA service: {e}")
-
-
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())

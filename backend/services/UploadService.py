@@ -1,6 +1,7 @@
 from services.elastic_search_service import ElasticsearchService
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from langchain.schema import Document
+from clients.ollama import OllamaClient
 from services.llm_service import ask_question
 from utils.helper import extract_text_from_pdf
 from fastapi.responses import JSONResponse
@@ -53,6 +54,130 @@ class UploadService:
         self.logger.info(f"Split text into {len(chunks)} chunks")
         
         return chunks
+
+    def analysis_structure(self, Document_Type: str = "Unknown Document", 
+                        Main_Purpose: str = "Purpose not determined",
+                        Key_Highlights: List[dict] = None,
+                        Risk_Assessment: dict = None,
+                        Key_Terms: List[dict] = None,
+                        Suggested_Questions: List[str] = None) -> dict:
+        """
+        Create a structured analysis object that matches the expected JSON schema for legal document analysis.
+        This function serves as a data validation and normalization tool that enforces consistent structure
+        across all document analysis outputs, ensuring compatibility with frontend components and API consumers.
+        
+        The function validates input data types, provides sensible defaults for missing fields, and transforms
+        malformed data into the correct schema format. This is particularly useful when processing LLM responses
+        that may have inconsistent formatting or missing fields.
+        
+        Schema Structure:
+        - Document_Type: Classification of the legal document (contracts, agreements, disputes, etc.)
+        - Main_Purpose: Executive summary of the document's primary objective
+        - Key_Highlights: Critical points that require user attention (terms, clauses, obligations)
+        - Risk_Assessment: Comprehensive risk analysis with numerical scoring and categorized risks
+        - Key_Terms: Important legal terminology with explanations for non-legal users
+        - Suggested_Questions: Contextual questions to help users understand the document better
+        
+        Args:
+            Document_Type (str): Type of document (Property dispute, Rental agreement, Criminal chargesheet, Employment contract, Service agreement, etc.)
+            Main_Purpose (str): Main purpose of the document (The primary objective, intent, or goal of the legal document in plain language)
+            Key_Highlights (List[dict]): List of important highlights (Critical information formatted as [{"data": "highlight text"}, {"data": "another highlight"}] - focuses on obligations, rights, penalties, deadlines)
+            Risk_Assessment (dict): Risk assessment with score and categorized risks (Example: {"Risk_Score": 6, "High_Risk": [{"title": "Late Payment", "description": "5% penalty"}], "Medium_Risk": [], "Low_Risk": []})
+            Key_Terms (List[dict]): List of key terms with titles and descriptions (Legal jargon explained in simple terms: [{"title": "Indemnification", "description": "Protection from legal liability"}])
+            Suggested_Questions (List[str]): List of suggested questions (Contextual questions users might ask: ["What are my obligations?", "When does this expire?", "How can I terminate this?"])
+        
+        Returns:
+            dict: Properly structured analysis matching the JSON schema with validated data types, 
+                ensuring all required fields are present with appropriate defaults and proper formatting
+                for consistent API responses and frontend consumption.
+        """
+        
+        # Default values for complex fields
+        if Key_Highlights is None:
+            Key_Highlights = [{"data": "No highlights identified"}]
+        
+        if Risk_Assessment is None:
+            Risk_Assessment = {
+                "Risk_Score": 5,
+                "High_Risk": [],
+                "Medium_Risk": [],
+                "Low_Risk": []
+            }
+        
+        if Key_Terms is None:
+            Key_Terms = [{"title": "No terms", "description": "No key terms identified"}]
+        
+        if Suggested_Questions is None:
+            Suggested_Questions = [
+                "What are the main obligations?",
+                "What are the risks?", 
+                "How can this be terminated?"
+            ]
+        
+        # Validate and structure Risk_Assessment
+        risk_assessment = {
+            "Risk_Score": Risk_Assessment.get("Risk_Score", 5),
+            "High_Risk": Risk_Assessment.get("High_Risk", []),
+            "Medium_Risk": Risk_Assessment.get("Medium_Risk", []),
+            "Low_Risk": Risk_Assessment.get("Low_Risk", [])
+        }
+        
+        # Ensure Risk_Score is an integer between 1-10
+        risk_score = risk_assessment["Risk_Score"]
+        if not isinstance(risk_score, int) or risk_score < 1 or risk_score > 10:
+            risk_assessment["Risk_Score"] = 5
+        
+        # Validate Key_Highlights structure
+        validated_highlights = []
+        for highlight in Key_Highlights:
+            if isinstance(highlight, dict) and "data" in highlight:
+                validated_highlights.append({"data": str(highlight["data"])})
+            elif isinstance(highlight, str):
+                validated_highlights.append({"data": highlight})
+        
+        if not validated_highlights:
+            validated_highlights = [{"data": "No highlights identified"}]
+        
+        # Validate Key_Terms structure
+        validated_terms = []
+        for term in Key_Terms:
+            if isinstance(term, dict) and "title" in term and "description" in term:
+                validated_terms.append({
+                    "title": str(term["title"]),
+                    "description": str(term["description"])
+                })
+        
+        if not validated_terms:
+            validated_terms = [{"title": "No terms", "description": "No key terms identified"}]
+        
+        # Validate risk arrays structure
+        for risk_level in ["High_Risk", "Medium_Risk", "Low_Risk"]:
+            validated_risks = []
+            for risk in risk_assessment[risk_level]:
+                if isinstance(risk, dict) and "title" in risk and "description" in risk:
+                    validated_risks.append({
+                        "title": str(risk["title"]),
+                        "description": str(risk["description"])
+                    })
+            risk_assessment[risk_level] = validated_risks
+        
+        # Ensure Suggested_Questions are strings
+        validated_questions = [str(q) for q in Suggested_Questions if q]
+        if not validated_questions:
+            validated_questions = [
+                "What are the main obligations?",
+                "What are the risks?",
+                "How can this be terminated?"
+            ]
+        
+        return {
+            "Document_Type": str(Document_Type),
+            "Main_Purpose": str(Main_Purpose),
+            "Key_Highlights": validated_highlights,
+            "Risk_Assessment": risk_assessment,
+            "Key_Terms": validated_terms,
+            "Suggested_Questions": validated_questions
+        }
 
 
     async def validate_file(self, file: File):
@@ -111,50 +236,10 @@ class UploadService:
             system_prompt = """
                 You are a legal document analyzer. Analyze the provided document text and return a structured JSON analysis.
 
-                Return STRICT JSON with the following structure:
-                {
-                    "Document_Type": "string - type of document (e.g., 'Rental Agreement', 'Employment Contract', 'Service Agreement')",
-                    "Main_Purpose": "string - main purpose of the document in 1-2 sentences",
-                    "Key_Highlights": [
-                        {"data": "string - important highlight 1"},
-                        {"data": "string - important highlight 2"},
-                        {"data": "string - important highlight 3"},
-                        {"data": "string - important highlight 4"}
-                    ],
-                    "Risk_Assessment": {
-                        "Risk_Score": "integer - overall risk score from 1-10 (10 being highest risk)",
-                        "High_Risk": [
-                            {"title": "string - risk title", "description": "string - risk description"},
-                            {"title": "string - risk title", "description": "string - risk description"}
-                        ],
-                        "Medium_Risk": [
-                            {"title": "string - risk title", "description": "string - risk description"},
-                            {"title": "string - risk title", "description": "string - risk description"}
-                        ],
-                        "Low_Risk": [
-                            {"title": "string - risk title", "description": "string - risk description"},
-                            {"title": "string - risk title", "description": "string - risk description"}
-                        ]
-                    },
-                    "Key_Terms": [
-                        {"title": "string - term name", "description": "string - term details"},
-                        {"title": "string - term name", "description": "string - term details"},
-                        {"title": "string - term name", "description": "string - term details"}
-                    ],
-                    "Suggested_Questions": [
-                        "string - relevant question 1",
-                        "string - relevant question 2", 
-                        "string - relevant question 3"
-                    ]
-                }
+                You are provided a tool called `analysis_structure` to fulfill your purpose.
+                You are supposed to call this tool and get the desired response from the tool.
 
-                Rules:
-                - Output JSON ONLY (no markdown or extra text)
-                - Always include all required fields
-                - High_Risk and Medium_Risk can be empty arrays if no significant risks found
-                - Risk_Score should reflect overall document risk (terms, penalties, obligations)
-                - Key_Highlights should focus on the most important terms and conditions
-                - Suggested_Questions should be practical questions a user might ask about the document
+                If you do not call this tool, the output will not be accepted. Calling the tool with a valid parameter set is mandatory.
                 """
 
             human_prompt = f"""Document Text:
@@ -163,9 +248,11 @@ class UploadService:
                 -----
 
                 Analyze this document and return the structured JSON analysis."""
+            
+            model_instance = OllamaClient.get_client().bind_tools([self.analysis_structure])
 
             # Call the LLM service
-            raw_response = await ask_question(system_prompt, human_prompt)
+            raw_response = await ask_question(system_prompt, human_prompt, model_instance)
             
             # Parse and validate the response
             try:

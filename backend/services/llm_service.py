@@ -2,10 +2,13 @@ import time
 from langchain_core.messages import HumanMessage, SystemMessage
 from clients.ollama import OllamaClient
 from services.logging import get_logger, log_with_context
+from typing import List
 
 logger = get_logger("llm_service")
 
-async def ask_question(system_message: str, human_message: str):
+
+
+async def ask_question(system_message: str, human_message: str, custom_instance = None):
     """
     Ask a question to the LLM with system and human messages.
     
@@ -33,7 +36,10 @@ async def ask_question(system_message: str, human_message: str):
         #                 streaming=False,
         #             )
 
-        model = OllamaClient.get_client()
+        if not custom_instance:
+            model = OllamaClient.get_client()
+        else:
+            model = custom_instance
         
         logger.debug("Llama model initialized")
         logger.info("Received system message: {}".format(system_message))

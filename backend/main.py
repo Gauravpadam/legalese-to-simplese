@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers.health import router as health_router
+from routers.upload import router as upload_router
 from services.logging import configure_logging, get_logger
+import uvicorn
 
 # Configure logging on startup
 configure_logging(
@@ -37,8 +39,13 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health_router, prefix="/api")
+app.include_router(upload_router, prefix="/api")
 
 @app.get("/")
 async def root():
     logger.info("Root endpoint accessed")
     return {"status": "ok", "message": "Backend is running"}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+

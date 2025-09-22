@@ -12,8 +12,12 @@ from prompts.guardrail_prompts import guardrails_system_prompt, guardrails_user_
 import re
 import time
 from typing import Optional
+from enum import Enum
+    
 
 logger = get_logger("guardrail_service")
+
+
 
 
 async def validate_user_question(user_input: str) -> bool:
@@ -74,7 +78,7 @@ async def validate_user_question(user_input: str) -> bool:
             duration_seconds=round(duration, 3)
         )
         
-        return is_valid
+        return "true" in is_valid.lower()
         
     except Exception as e:
         duration = time.time() - start_time

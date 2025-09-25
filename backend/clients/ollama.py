@@ -1,4 +1,4 @@
-from langchain_community.chat_models.ollama import ChatOllama
+from langchain_ollama.chat_models import ChatOllama
 from langchain_community.embeddings import OllamaEmbeddings
 
 class OllamaClient:

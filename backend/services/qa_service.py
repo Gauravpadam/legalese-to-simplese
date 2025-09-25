@@ -6,11 +6,12 @@ from typing import Dict, Any, List, Tuple
 from services.custom_guardrail_service import validate_user_question
 from clients.ollama import OllamaClient
 from services.elastic_search_service import ElasticsearchService
+from DTO import QuestionResponse
 
 import json
 
 
-async def process_user_question(question: str = "What is the related risk to the contract") -> Dict[str, Any]:
+async def process_user_question(question: str = "What is the related risk to the contract") -> QuestionResponse:
     """
     Processes a user question through guardrail validation.
     
@@ -67,10 +68,8 @@ async def process_user_question(question: str = "What is the related risk to the
 
     response_text = response.content
 
+    print(type(response_text))
+
     # Extract the final answer
     final_answer = response_text
-    return {
-        "question": question,
-        "final_answer": final_answer,
-        "chunks": chunked_text,
-    }
+    return QuestionResponse(question=question, answer=response_text, status="success")

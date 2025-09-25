@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from services.llm_service import ask_question
+from services.qa_service import process_user_question
 from services.logging import get_logger, log_with_context
+from DTO import QuestionResponse
 
 router = APIRouter(prefix="/qa", tags=["Question & Answer"])
 
@@ -11,16 +12,10 @@ class QuestionRequest(BaseModel):
     question: str = Field(..., description="The question to ask", min_length=1, max_length=2000)
     context: str = Field(default="", description="Optional context for the question", max_length=10000)
 
-class QuestionResponse(BaseModel):
-    question: str
-    answer: str
-    status: str = "success"
-
 @router.post("/ask", 
              response_model=QuestionResponse,
              summary="Ask a question",
              description="Submit a question to get an AI-generated answer. Optionally provide context for better responses.")
-
 async def ask_question_endpoint(request: QuestionRequest):
     """
     Ask a question and get an AI-generated response.
@@ -38,7 +33,7 @@ async def ask_question_endpoint(request: QuestionRequest):
             system_message = "You are a helpful AI assistant. Please provide clear, accurate, and helpful responses to user questions."
         
         # Get response from LLM service
-        answer = await ask_question(system_message, request.question)
+        answer = await process_user_question(request.question)
         
         log_with_context(
             "qa_router",
@@ -46,14 +41,10 @@ async def ask_question_endpoint(request: QuestionRequest):
             "Question answered successfully",
             question_length=len(request.question),
             context_length=len(request.context),
-            answer_length=len(answer) if answer else 0
+            # answer_length=len(answer) if answer else 0
         )
         
-        return QuestionResponse(
-            question=request.question,
-            answer=answer,
-            status="success"
-        )
+        return answer
         
     except Exception as e:
         logger.error(f"Error processing question: {e}", exc_info=True)

@@ -1,33 +1,31 @@
-version: "3.9"
+version: "3.8"
 
 services:
-  backend:
-    image: python:3.11-slim
-    working_dir: /app
-    volumes:
-      - ./backend:/app
-    command: sh -c "pip install --no-cache-dir -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000"
-    ports:
-      - "8000:8000"
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: elasticsearch
     environment:
-      - PYTHONUNBUFFERED=1
-    restart: unless-stopped
+      - discovery.type=single-node
+      - xpack.security.enabled=false  # Disable security for local dev
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
 
-  frontend:
-    image: node:20-alpine
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
-    ports:
-      - "5173:5173"
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: kibana
     environment:
-      - VITE_API_BASE_URL=http://localhost:8000
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
     depends_on:
-      - backend
-    restart: unless-stopped
+      - elasticsearch
 
-networks:
-  default:
-    name: legalese-network
+volumes:
+  es_data:

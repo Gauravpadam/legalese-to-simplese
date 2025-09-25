@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 
-from routers.health import router as health_router
+# from routers.health import router as health_router
 from routers.upload import router as upload_router
+from routers.qa import router as qa_router
 from services.logging import configure_logging, get_logger
+import uvicorn
 
 # Configure logging on startup
 configure_logging(
@@ -15,18 +16,17 @@ configure_logging(
 
 logger = get_logger("main")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    logger.info("Starting Legalese to Simplese API...")
-    yield
-    # Shutdown
-    logger.info("Shutting down Legalese to Simplese API...")
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     # Startup
+#     logger.info("Starting Legalese to Simplese API...")
+#     yield
+#     # Shutdown
+#     logger.info("Shutting down Legalese to Simplese API...")
 
 app = FastAPI(
     title="Legalese to Simplese API", 
     version="0.1.0",
-    lifespan=lifespan
 )
 
 # CORS configuration (adjust origins as needed)
@@ -39,10 +39,15 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(health_router, prefix="/api")
+# app.include_router(health_router, prefix="/api")
 app.include_router(upload_router, prefix="/api")
+app.include_router(qa_router, prefix="/api")
 
 @app.get("/")
 async def root():
     logger.info("Root endpoint accessed")
     return {"status": "ok", "message": "Backend is running"}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+

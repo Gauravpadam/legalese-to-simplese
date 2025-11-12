@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState,useContext } from 'react'
+import { useRef, useState, useContext } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import CustomLoadingOverlay from '../../components/CustomLoadingOverlay'
 import './index.css'
@@ -6,36 +6,18 @@ import './index.css'
 import AnalysisContext from '../../contexts/AnalysisContext'
 
 export default function Upload() {
-
-  const { analysis, setAnalysis } = useContext(AnalysisContext);
+  const { setAnalysis } = useContext(AnalysisContext)
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('upload')
   const [hasFile, setHasFile] = useState(false)
   const [fileObj, setFileObj] = useState(null)
   const [pasteText, setPasteText] = useState('')
   const [loading, setLoading] = useState(false)
-  const party1Ref = useRef(null)
-  const party2Ref = useRef(null)
   const fileInputRef = useRef(null)
-
-  useEffect(() => {
-    const existing = localStorage.getItem('legalAnalysisData')
-    if (existing) {
-      try {
-        const data = JSON.parse(existing)
-        if (data.pasteText) {
-          setActiveTab('paste')
-          setPasteText(data.pasteText)
-        }
-        if (party1Ref.current && data.party1) party1Ref.current.value = data.party1
-        if (party2Ref.current && data.party2) party2Ref.current.value = data.party2
-      } catch {}
-    }
-  }, [])
 
   function onFileSelected(file) {
     if (!file) return
-    const allowedTypes = ['application/pdf']
+    const allowedTypes = ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain']
     if (!allowedTypes.includes(file.type)) {
       alert('Please upload a PDF, DOC, DOCX, or TXT file.')
       return
@@ -57,64 +39,51 @@ export default function Upload() {
     setLoading(true)
 
     try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+      let response
+
+      if (activeTab === 'upload' && fileObj) {
+        // File upload case
+        const formData = new FormData()
+        formData.append('document', fileObj)
+
+        response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
+          method: 'POST',
+          body: formData,
+        })
+      } else if (activeTab === 'paste' && pasteText.trim()) {
+        // Paste text case - create a text file and upload it
+        const textBlob = new Blob([pasteText], { type: 'text/plain' })
+        const textFile = new File([textBlob], 'pasted-text.txt', { type: 'text/plain' })
+
+        const formData = new FormData()
+        formData.append('document', textFile)
+
+        response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
+          method: 'POST',
+          body: formData,
+        })
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || `Upload failed: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      // Store the analysis data with extracted text for Q&A context
       setAnalysis({
-  "Document_Type": "Rental Agreement",
-  "Main_Purpose": "To establish the terms and conditions for the rental of a residential property between a landlord and a tenant.",
-  "Key_Highlights": [
-    {
-      "data": "11-month fixed term tenancy starting October 1, 2025."
-    },
-    {
-      "data": "Monthly rent of ₹25,000 due by the 5th, with a steep ₹500/day late fee after 3 days."
-    },
-    {
-      "data": "Refundable security deposit of ₹75,000, subject to deductions for unpaid rent, damages, or utilities."
-    },
-    {
-      "data": "Either party can terminate with one-month written notice: early vacating without notice forfeits the deposit."
-    }
-  ],
-  "Risk_Assessment": {
-    "Risk_Score": 9,
-    "High_Risk": [
-      {
-        "title": "Steep Late Fee Penalty",
-        "description": "₹500/day late fee after 3 days is unusually high and may be unenforceable in court."
-      },
-      {
-        "title": "Deposit Forfeiture Clause",
-        "description": "Complete deposit forfeiture for early termination may be excessive and legally questionable."
-      }
-    ],
-    "Medium_Risk": [
-      {
-        "title": "Vague Maintenance Terms",
-        "description": "Minor repairs and major structural issues are not clearly defined."
-      },
-      {
-        "title": "Notice Period Ambiguity",
-        "description": "One-month notice requirement lacks specific delivery method requirements."
-      }
-    ]
-  },
-  "Key_Terms": [
-    {
-      "title": "Monthly Rent",
-      "description": "₹25,000 Due by 5th of each month"
-    },
-    {
-      "title": "Lease Duration",
-      "description": "11 months Fixed term starting October 1, 2025"
-    }
-  ],
-  "Suggested_Questions": [
-    "What happens if I pay rent late?",
-    "Can I terminate the lease early?"
-  ]
-})  
+        ...data.document_analysis,
+        extracted_text: data.extracted_text,
+        document_id: data.document_id,
+        filename: data.filename,
+      })
+
       navigate('/analysis')
     } catch (err) {
-      alert(err.message || 'Analysis failed')
+      console.error('Analysis error:', err)
+      alert(err.message || 'Analysis failed. Please try again.')
     } finally {
       setLoading(false)
     }

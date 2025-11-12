@@ -59,7 +59,7 @@ async def ask_question(system_message: str, human_message: str, custom_instance 
             "llm_service",
             "info",
             "LLM question completed successfully",
-            model_id="llama3.1",
+            model_id="gpt-oss:cloud",
             system_msg_length=len(system_message),
             human_msg_length=len(human_message),
             response_length=len(response_text) if response_text else 0,

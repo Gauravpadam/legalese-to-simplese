@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from services.qa_service import process_user_question
 from services.logging import get_logger, log_with_context
-from DTO import QuestionResponse
+from DTO.DTO import QuestionResponse
 
 router = APIRouter(prefix="/qa", tags=["Question & Answer"])
 

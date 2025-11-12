@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Tuple
 from services.custom_guardrail_service import validate_user_question
 from clients.ollama import OllamaClient
 from services.elastic_search_service import ElasticsearchService
-from DTO import QuestionResponse
+from DTO.DTO import QuestionResponse
 
 import json
 

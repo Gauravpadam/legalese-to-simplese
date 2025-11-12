@@ -219,6 +219,31 @@ class UploadService:
         else:
             raise HTTPException(400, "File size exceeded.")
 
+    def _extract_json_from_response(self, text: str) -> dict:
+        """
+        Extract JSON from LLM response, handling markdown code blocks.
+        
+        Args:
+            text (str): Raw LLM response text
+            
+        Returns:
+            dict: Parsed JSON object
+            
+        Raises:
+            json.JSONDecodeError: If JSON cannot be parsed
+        """
+        import re
+        
+        # Try to find JSON in markdown code blocks first
+        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+        if json_match:
+            self.logger.debug("Found JSON in markdown code block")
+            return json.loads(json_match.group(1))
+        
+        # Try direct parsing
+        self.logger.debug("Attempting direct JSON parsing")
+        return json.loads(text.strip())
+
     async def analyze_document_with_llm(self, text: str) -> dict:
         """
         Analyze the entire document text using LLM to generate structured analysis.
@@ -233,30 +258,65 @@ class UploadService:
         
         try:
             
-            system_prompt = """
-                You are a legal document analyzer. Analyze the provided document text and return a structured JSON analysis.
+            system_prompt = """You are a legal document analyzer. Analyze the provided document text and return ONLY a valid JSON object with this exact structure:
 
-                You are provided a tool called `analysis_structure` to fulfill your purpose.
-                You are supposed to call this tool and get the desired response from the tool.
+{
+  "Document_Type": "string - Type of document (e.g., Rental Agreement, Employment Contract, Service Agreement, NDA)",
+  "Main_Purpose": "string - Main purpose of the document in plain language",
+  "Key_Highlights": [
+    {"data": "string - Important highlight about obligations, rights, or key terms"},
+    {"data": "string - Another important highlight"}
+  ],
+  "Risk_Assessment": {
+    "Risk_Score": 5,
+    "High_Risk": [
+      {"title": "string - Risk title", "description": "string - Detailed risk description"}
+    ],
+    "Medium_Risk": [
+      {"title": "string - Risk title", "description": "string - Detailed risk description"}
+    ],
+    "Low_Risk": [
+      {"title": "string - Risk title", "description": "string - Detailed risk description"}
+    ]
+  },
+  "Key_Terms": [
+    {"title": "string - Legal term", "description": "string - Plain language explanation"}
+  ],
+  "Suggested_Questions": [
+    "string - Question users might ask about this document",
+    "string - Another relevant question"
+  ]
+}
 
-                If you do not call this tool, the output will not be accepted. Calling the tool with a valid parameter set is mandatory.
-                """
+IMPORTANT INSTRUCTIONS:
+1. Return ONLY the JSON object, no additional text, explanation, or markdown formatting
+2. Risk_Score must be a number between 1-10
+3. Provide at least 3-5 Key_Highlights
+4. Categorize risks appropriately (High/Medium/Low)
+5. Include at least 3-5 Key_Terms with clear explanations
+6. Suggest 3-5 relevant questions users might ask
+
+Analyze the document thoroughly and return the JSON."""
 
             human_prompt = f"""Document Text:
-                -----
-                {text[:8000]}...
-                -----
+-----
+{text[:8000]}
+-----
 
-                Analyze this document and return the structured JSON analysis."""
+Analyze this legal document and return the structured JSON analysis."""
             
-            model_instance = OllamaClient.get_client().bind_tools([self.analysis_structure])
+            # Get model instance without tool binding
+            model_instance = OllamaClient.get_client()
 
             # Call the LLM service
             raw_response = await ask_question(system_prompt, human_prompt, model_instance)
             
+            # Log raw response for debugging
+            self.logger.debug(f"Raw LLM response (first 500 chars): {raw_response[:500] if raw_response else 'None'}...")
+            
             # Parse and validate the response
             try:
-                analysis = json.loads(raw_response or "{}")
+                analysis = self._extract_json_from_response(raw_response or "{}")
                 
                 # Ensure all required fields exist with defaults
                 required_structure = {
@@ -278,6 +338,7 @@ class UploadService:
                 
             except json.JSONDecodeError as e:
                 self.logger.error(f"❌ Failed to parse LLM response as JSON: {e}")
+                self.logger.error(f"Raw response was: {raw_response[:1000] if raw_response else 'None'}...")
                 return self._get_default_analysis()
                 
         except Exception as e:
@@ -416,6 +477,7 @@ class UploadService:
                     detail=f"Failed to process document: {str(e)}"
                 )
 
+    @staticmethod
     def _get_default_analysis() -> dict:
         """Return default analysis structure when LLM analysis fails."""
         return {
@@ -428,7 +490,8 @@ class UploadService:
             "Risk_Assessment": {
                 "Risk_Score": 5,
                 "High_Risk": [],
-                "Medium_Risk": []
+                "Medium_Risk": [],
+                "Low_Risk": []
             },
             "Key_Terms": [
                 {"title": "Analysis Error", "description": "Unable to extract key terms"}

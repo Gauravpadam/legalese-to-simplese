@@ -49,11 +49,11 @@ export default function Analysis() {
 
   const handleQuestionClick = (question) => {
     setCurrentMessage(question)
-    // Optionally, you can also automatically send the question
-    // handleSendMessage(question)
+    // Automatically send the suggested question
+    handleSendMessage(question)
   }
 
-  const handleSendMessage = (messageText = currentMessage) => {
+  const handleSendMessage = async (messageText = currentMessage) => {
     if (!messageText.trim()) return
 
     // Add user message to chat
@@ -67,15 +67,55 @@ export default function Analysis() {
     // Clear current message
     setCurrentMessage('')
 
-    // Here you would typically make an API call to get the AI response
-    // For now, adding a placeholder response
-    setTimeout(() => {
-      const aiResponse = {
-        type: 'assistant',
-        content: `I understand you're asking about: "${messageText}". This would typically be answered by analyzing the specific clauses in your contract. Please implement the AI response API integration here.`
+    // Add loading indicator
+    const loadingMessage = {
+      type: 'assistant',
+      content: '...',
+      isLoading: true
+    }
+    setChatMessages(prev => [...prev, loadingMessage])
+
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+      
+      const response = await fetch(`${API_BASE_URL}/api/qa/ask`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: messageText,
+          context: analysisData?.extracted_text || ''
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || 'Failed to get answer')
       }
-      setChatMessages(prev => [...prev, aiResponse])
-    }, 1000)
+
+      const data = await response.json()
+
+      // Remove loading message and add actual response
+      setChatMessages(prev => {
+        const withoutLoading = prev.filter(msg => !msg.isLoading)
+        return [...withoutLoading, {
+          type: 'assistant',
+          content: data.answer
+        }]
+      })
+    } catch (error) {
+      console.error('Q&A error:', error)
+      
+      // Remove loading message and add error response
+      setChatMessages(prev => {
+        const withoutLoading = prev.filter(msg => !msg.isLoading)
+        return [...withoutLoading, {
+          type: 'assistant',
+          content: 'Sorry, I encountered an error processing your question. Please try again.'
+        }]
+      })
+    }
   }
 
   const handleKeyPress = (e) => {
@@ -412,15 +452,17 @@ export default function Analysis() {
                   <div className="qa-chat">
                     <div className="chat-messages">
                       {chatMessages.map((message, index) => (
-                        <div key={index} className={`message ${message.type}`}>
+                        <div key={index} className={`message ${message.type} ${message.isLoading ? 'loading' : ''}`}>
                           <div className="message-content">
-                            <p>{message.content}</p>
-                            {/* {message.type === 'assistant' && (
-                              // <div className="message-actions">
-                              //   <button className="action-btn">View Clause</button>
-                              //   <button className="action-btn">Get Legal Advice</button>
-                              // </div>
-                            )} */}
+                            {message.isLoading ? (
+                              <p className="typing-indicator">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                              </p>
+                            ) : (
+                              <p>{message.content}</p>
+                            )}
                           </div>
                         </div>
                       ))}
